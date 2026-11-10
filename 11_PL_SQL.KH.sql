@@ -1,0 +1,305 @@
+/*
+PL/SQL : PROCEDURE LANGUAGE TO SQL 
+
+오라클 자체에 내장되어 있는 절차적 언어
+SQL(PL/SQL) 문장내에 변수 정의 조건문 반복문 등을 지원
+
+구조 
+
+선언부 : DECLARE로 시작 변수나 상수를 선언하고 초기화하는 부분 생략가능
+실행부 : BEGIN 으로 시작 SQL문 또는 제어문(조건문,반복문)로 로직을 작성하는 부분 필수
+예외처리부: EXCEPTION 으로 시작 실행중 오류가 발생했을때 발생시 해결하기위한 부분 생략가능
+
+*/
+
+---화면에 출력하기 위한 설정( DBMS_OUTPUT) *
+-- 접속할때마다 새로운 워크시트 창을 열때 실행해야함
+SET SERVEROUTPUT ON;
+
+--HEOLLO ORACLE
+
+BEGIN
+  DBMS_OUTPUT.PUT_LINE('HELLO ORACLE');
+END;
+/
+
+/*
+선언부 DECLARE
+변수 또는 상수를 선언하는 부분 (선언과 동시에 초기화도 가능)
+
+
+*/
+
+
+/*
+일반타입변수
+변수명(CONSTANT) 데이터타입 := 값;
+자바와의 차이점
+1) 자바에서는 데이터타입 변수명이지만 변수명 데이터타입 이다
+2) 자바는 = 이지만 SQL에선 :=이다
+3)상수선언에서는 자바는 final 이지만 SQL에선 CONSTANT
+
+*/
+
+DECLARE
+NAME VARCHAR2(10);
+AGE NUMBER;
+CLASS CONSTANT CHAR(1) := 'C';
+BEGIN 
+NAME := 'ㅂㄱㅌ';
+AGE := 20;
+
+DBMS_OUTPUT.PUT_LINE('이름 : '|| NAME);
+DBMS_OUTPUT.PUT_LINE('나이 : '|| AGE);
+DBMS_OUTPUT.PUT_LINE('강의장 : '|| CLASS);
+END;
+/
+
+--값을 입력 받아 변수에 대입
+-- --> &이름과 같이 작성시  값을 입력받을수있음
+DECLARE
+EID NUMBER;
+ENAME VARCHAR2(10);
+BEGIN
+ENAME := '&이름';
+--만약 입력받을 값이 문자타입에 변수에 저장된다면 '&이름'으로 감싸줘야한다
+--EID := &직원번호;
+
+EID := 666;
+DBMS_OUTPUT.PUT_LINE('이름 :' ||ENAME);
+DBMS_OUTPUT.PUT_LINE('직원번호 :' ||EID);
+END;
+/
+
+/*
+참조타입 변수
+%TYPE
+특정테이블의 특정컬럼 데이터 타입을 그대로 가져와서 변수로 선언
+=> 컬럼 타입이 나중에 바뀌어도  코드수정 필요없음
+변수명 테이블명.컬럼명%TYPE;
+*/
+--EMPLOYEE 테이블의 EMP_ID컬럼 EMP_NAME 컬럼 SALARY 컬럼을 참조하여 EID ENAME SAL 변수 선언
+
+
+DECLARE
+EID EMPLOYEE.EMP_ID%TYPE;
+ENAME EMPLOYEE.EMP_NAME%TYPE;
+SAL EMPLOYEE.SALARY%TYPE;
+
+BEGIN
+SELECT EMP_ID, EMP_NAME, SALARY
+INTO EID, ENAME, SAL
+FROM EMPLOYEE
+WHERE EMP_ID = '&직원번호';
+
+DBMS_OUTPUT.PUT_LINE('직원번호: '||EID);
+DBMS_OUTPUT.PUT_LINE('직원이름: '||ENAME);
+DBMS_OUTPUT.PUT_LINE('급여: '||SAL);
+
+
+END;
+/                 
+
+--QUIZ 직원번호를 입력받아 해당 직원의 직원번호 이름 직급 코드 부서명을 출력해복
+
+DECLARE
+EID EMPLOYEE.EMP_ID%TYPE;
+ENAME EMPLOYEE.EMP_NAME%TYPE;
+EJOB EMPLOYEE.JOB_CODE%TYPE;
+EDEPT DEPARTMENT.DEPT_TITLE%TYPE;
+SAL EMPLOYEE.SALARY%TYPE;
+
+BEGIN
+SELECT EMP_ID, EMP_NAME, JOB_CODE, DEPT_TITLE, SALARY
+INTO EID, ENAME, EJOB, EDEPT, SAL
+FROM EMPLOYEE LEFT JOIN DEPARTMENT ON DEPT_CODE = DEPT_ID
+WHERE EMP_ID = '&직원번호';
+
+DBMS_OUTPUT.PUT_LINE('직원번호: '||EID);
+DBMS_OUTPUT.PUT_LINE('직원이름: '||ENAME);
+DBMS_OUTPUT.PUT_LINE('직급코드: '||EJOB);
+DBMS_OUTPUT.PUT_LINE('부서명: '||EDEPT);
+DBMS_OUTPUT.PUT_LINE('급여: '||SAL);
+DBMS_OUTPUT.PUT_LINE(EID ||','||ENAME||','||EJOB||','||EDEPT||','||SAL);
+
+
+END;
+/
+
+    /*
+    ROW타입 변수
+    %ROWTYPE
+    테이블 한행 전체를 통째로 담을수 있는 변수 (자바의 참조변수와 유사)
+    변수명 테이블명%ROWTYPE
+    
+    */
+DECLARE
+E EMPLOYEE%ROWTYPE;
+BEGIN
+SELECT *
+INTO E
+FROM EMPLOYEE
+WHERE EMP_ID = '&직원번호';
+DBMS_OUTPUT.PUT_LINE('이름:'||E.EMP_NAME);
+DBMS_OUTPUT.PUT_LINE('급여:'||E.SALARY);
+DBMS_OUTPUT.PUT_LINE('보너스:'||NVL(E.BONUS,0));
+END;
+/
+
+
+/*
+실행부 BEGIN
+
+제어문 조건문
+-단일 IF문 :IF 조건식 THEN 실행할내용 END IF;
+-IF/ELSE문 : IF 조건식 THEN 만족할때실행 ELSE 만족하지않을때 실행 END IF;
+-IF/ELSEIF문 : IF 조건식 THEN 실행 1 ELSIF 조건식2 THEN 실행2 ELSE 실행 END IF;
+=>자바에서는 else if (조건식)이지만 sql에서는 ELSIF이다
+
+*/
+DECLARE
+SCORE NUMBER;
+GRADE CHAR(1);
+BEGIN
+SCORE := &점수;
+IF SCORE >= 90 THEN GRADE := 'A';
+ELSIF SCORE >= 80 THEN GRADE := 'B';
+ELSIF SCORE >= 70 THEN GRADE := 'C';
+ELSIF SCORE >= 60 THEN GRADE := 'D';
+ELSE GRADE := 'F';
+END IF;
+
+DBMS_OUTPUT.PUT_LINE('등급 :' || GRADE);
+
+END;
+/
+
+--직원정보  이름 급여 보너스 정보를 출력
+--보너스를 받지않는경우  보너를 받지안흔 직원입니다 출력
+DECLARE
+EID EMPLOYEE.EMP_ID%TYPE;
+ENAME EMPLOYEE.EMP_NAME%TYPE;
+SAL EMPLOYEE.SALARY%TYPE;
+BONUS EMPLOYEE.BONUS%TYPE;
+BEGIN
+SELECT EMP_ID, EMP_NAME, SALARY, BONUS
+INTO EID, ENAME, SAL, BONUS
+FROM EMPLOYEE
+WHERE EMP_ID = '&직원번호';
+--직원번호를 입력받아 해당 직원정보를 조회하여 변수에 저장
+--저장된값을 출력
+DBMS_OUTPUT.PUT_LINE('직원번호 :' || EID);
+DBMS_OUTPUT.PUT_LINE('직원이름 :' || ENAME);
+DBMS_OUTPUT.PUT_LINE('급여 :' || SAL);
+IF BONUS IS NULL THEN DBMS_OUTPUT.PUT_LINE('보너스를 받지 않는 직원입니다');
+ELSE DBMS_OUTPUT.PUT_LINE('보너스'||BONUS);
+END IF;
+
+END;
+/
+
+/*
+반복문
+
+FOR LOOP문 (JAVA FOR문과 비슷)
+
+FOR 변수명 IN [REVERSE] 초기값 ..끝값
+
+LOOP
+
+반복할내용
+
+END LOOP;
+
+*/
+
+--TEST 테이블 SEQ_TNO 시퀀스 생성
+--TEST 테이블 : TNO(PK,숫자) TDATE(날짜)
+--SEQ_TNO 시퀀스 1부터 1000까지 2씩증가 순환 X
+
+DROP TABLE TEST;
+
+CREATE TABLE TEST (
+TNO NUMBER PRIMARY KEY,
+TDATE DATE
+);
+CREATE SEQUENCE SEQ_TNO
+INCREMENT BY 2
+MAXVALUE 1000
+NOCYCLE
+NOCACHE;
+
+BEGIN
+FOR I IN 1..100
+LOOP
+    INSERT INTO TEST VALUES (SEQ_TNO.NEXTVAL,SYSDATE);
+END LOOP;
+
+COMMIT;
+
+END;
+/
+
+SELECT COUNT(*) FROM TEST;
+
+/*
+예외 처리부 EXCEPTION 자
+자바의 TRY~CATCH와 유사
+EXCEPTION
+WHEN 예외명1 THEN 처리구문1;
+WHEN 예외명2 THEN 처리구문2;
+WHEN OTHERS THEN 그외의 모든예외 대한 처리구문;
+
+자주만나는 예외
+NO_DATA_FOUND : SELECT INTO 결과가 단 행도 없을 경우 발생
+TOO_MANY_ROWS : SELECT INTO 결과가 여러행일때 발생
+ZERO_DIVIDE :0으로 숫자를 나누려고 할때 발생 ArithemeticException
+DUP_VAL_ON_INDEX :기본키 UNIQUE등 컬럼에 중복된 값을 저장하려 할때 발생
+*/
+
+--직원번호를 입력받아 노옹철 직원의 번호를 변경
+BEGIN
+UPDATE EMPLOYEE
+SET EMP_ID = '&변경할직원번호'
+WHERE EMP_NAME = '노옹철';
+EXCEPTION
+WHEN DUP_VAL_ON_INDEX THEN DBMS_OUTPUT.PUT_LINE('ERROR! 이미 존재하는 번호입니다 다른번호를 입력하세요');
+
+END;
+/
+
+/*PROCEDURE
+특정비즈니스 로직을 처리하는 PL/SQL코드를 DB에 저장해둘수있는객체
+
+매개
+*/
+CREATE OR REPLACE PROCEDURE INSERT_TEST_DATA
+(
+DCOUNT IN NUMBER
+)
+IS
+BEGIN
+FOR I IN 1..100
+LOOP
+    INSERT INTO TEST VALUES (SEQ_TNO.NEXTVAL,SYSDATE);
+END LOOP;
+
+COMMIT;
+
+DBMS_OUTPUT.PUT_LINE(DCOUNT || '개의 데이터가 추가되었습니다');
+
+
+END;
+/
+
+--생성된 프로시저를 사용(실행)
+CALL INSERT_TEST_DATA(50);
+
+BEGIN
+INSERT_TEST_DATA(20);
+END;
+/
+
+SELECT COUNT(*) FROM TEST;
+SELECT * FROM TEST;
+
